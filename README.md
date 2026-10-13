@@ -218,6 +218,16 @@ The queue covers **8.2% of encounters but captures 17.7% of all `<30`-day readmi
 
 Useful verification queries are listed at the bottom of `seed_or_setup.sql`.
 
+## Screenshots
+
+**Swagger: key endpoints**
+
+![Swagger endpoints](docs/screenshots/swagger_endpoints.png)
+
+**PostgreSQL: loaded records** (queries in [`docs/screenshots/verify_queries.sql`](docs/screenshots/verify_queries.sql))
+
+![PostgreSQL loaded records](docs/screenshots/postgresql_loaded_records.png)
+
 ## FDE Reflection
 
 ### 7. What business problem did you solve?
