@@ -151,6 +151,28 @@ def create_encounter(encounter_data: Mapping[str, Any]) -> dict[str, Any]:
     return created
 
 
+def search_encounters(
+    patient_nbr: Optional[int] = None,
+    risk_level: Optional[str] = None,
+    risk_score: Optional[int] = None,
+    limit: int = 100,
+    offset: int = 0,
+) -> list[dict[str, Any]]:
+    if risk_level is not None:
+        risk_level = risk_level.strip().upper()
+        if risk_level not in VALID_RISK_LEVELS:
+            allowed_levels = ", ".join(sorted(VALID_RISK_LEVELS))
+            raise ValueError(f"Invalid risk level. Allowed values: {allowed_levels}")
+
+    return repository.search_encounters(
+        patient_nbr=patient_nbr,
+        risk_level=risk_level,
+        risk_score=risk_score,
+        limit=limit,
+        offset=offset,
+    )
+
+
 def get_care_queue(
     high_only: bool = False,
     min_risk_score: Optional[int] = None,
@@ -205,18 +227,36 @@ def update_intervention(
     )
 
     if intervention is None:
-        if encounter["risk_level"] not in QUEUE_RISK_LEVELS:
-            reason = f"it is {encounter['risk_level']} risk (score {encounter['risk_score']})"
-        else:
-            reason = (
-                f"discharge disposition {encounter['discharge_disposition_id']} "
-                "(expired / hospice) is excluded from outreach"
-            )
-        raise NotInCareQueueError(
-            f"Encounter {encounter_id} is not in the care queue because {reason}."
-        )
+        raise _not_in_queue_error(encounter)
 
     return intervention
+
+
+def get_intervention(encounter_id: int) -> dict[str, Any]:
+    """
+    Fetch an encounter's intervention, distinguishing unknown encounters from encounters
+    not in the queue.
+    """
+    encounter = get_encounter(encounter_id)
+    intervention = repository.get_intervention_by_encounter_id(encounter_id)
+
+    if intervention is None:
+        raise _not_in_queue_error(encounter)
+
+    return intervention
+
+
+def _not_in_queue_error(encounter: Mapping[str, Any]) -> NotInCareQueueError:
+    if encounter["risk_level"] not in QUEUE_RISK_LEVELS:
+        reason = f"it is {encounter['risk_level']} risk (score {encounter['risk_score']})"
+    else:
+        reason = (
+            f"discharge disposition {encounter['discharge_disposition_id']} "
+            "(expired / hospice) is excluded from outreach"
+        )
+    return NotInCareQueueError(
+        f"Encounter {encounter['encounter_id']} is not in the care queue because {reason}."
+    )
 
 
 # ---------------------------------------------------------------------------

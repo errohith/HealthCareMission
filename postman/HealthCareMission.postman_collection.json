@@ -270,6 +270,151 @@
           "response": []
         },
         {
+          "name": "Search encounters - HIGH, score 8",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"All results match the filters\", function () {",
+                  "    pm.response.json().forEach(r => {",
+                  "        pm.expect(r.risk_level).to.eql(\"HIGH\");",
+                  "        pm.expect(r.risk_score).to.eql(8);",
+                  "        pm.expect(r).to.have.property(\"status\");",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "encounters",
+                "search"
+              ],
+              "raw": "{{baseUrl}}/encounters/search?risk_level=HIGH&risk_score=8&limit=10",
+              "query": [
+                {
+                  "key": "risk_level",
+                  "value": "HIGH"
+                },
+                {
+                  "key": "risk_score",
+                  "value": "8"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Any combination of patient_nbr, risk_level and risk_score."
+          },
+          "response": []
+        },
+        {
+          "name": "Search encounters - by patient",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"All results belong to the patient\", function () {",
+                  "    pm.response.json().forEach(r => pm.expect(r.patient_nbr).to.eql(84002391));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "encounters",
+                "search"
+              ],
+              "raw": "{{baseUrl}}/encounters/search?patient_nbr=84002391",
+              "query": [
+                {
+                  "key": "patient_nbr",
+                  "value": "84002391"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Search encounters - invalid risk level (422)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 422\", function () {",
+                  "    pm.response.to.have.status(422);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "encounters",
+                "search"
+              ],
+              "raw": "{{baseUrl}}/encounters/search?risk_level=SEVERE",
+              "query": [
+                {
+                  "key": "risk_level",
+                  "value": "SEVERE"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Get encounter by ID",
           "event": [
             {
@@ -649,6 +794,45 @@
       "name": "Interventions",
       "description": "PATCH /interventions/{encounter_id} updates the workflow record for a queued encounter. Only fields sent are changed. Allowed status values: PENDING_REVIEW, ASSIGNED, CONTACTED, FOLLOW_UP_SCHEDULED, CLOSED. Run 'Get high-risk care queue' first so queueEncounterId is set.",
       "item": [
+        {
+          "name": "Get intervention",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Returned the requested intervention\", function () {",
+                  "    pm.expect(String(pm.response.json().encounter_id)).to.eql(pm.collectionVariables.get(\"queueEncounterId\"));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "interventions",
+                "{{queueEncounterId}}"
+              ],
+              "raw": "{{baseUrl}}/interventions/{{queueEncounterId}}"
+            }
+          },
+          "response": []
+        },
         {
           "name": "Assign intervention",
           "event": [

@@ -105,6 +105,15 @@ class CareQueueItem(Encounter):
     updated_at: datetime
 
 
+class PatientSearchResult(Encounter):
+    """An encounter with its care intervention, if it has one (LOW risk encounters do not)."""
+    intervention_id: Optional[int] = None
+    status: Optional[InterventionStatus] = None
+    assigned_to: Optional[str] = None
+    notes: Optional[str] = None
+    updated_at: Optional[datetime] = None
+
+
 class InterventionUpdate(BaseModel):
     """Request payload for updating intervention status, assignment, or notes."""
     status: Optional[InterventionStatus] = None

@@ -113,7 +113,7 @@ service.py      (risk rules, queue eligibility, workflow validation, metrics)
 main.py         (FastAPI routes, HTTP errors)
         ^
         |
-Swagger / API Consumer
+Swagger / API Consumer / fde-react-check (React UI, via Vite /api proxy)
 ```
 
 | File | Responsibility |
@@ -126,6 +126,7 @@ Swagger / API Consumer
 | `repository.py` | SQL queries and persistence only; every user value is passed as a parameter |
 | `models.py` | Pydantic request and response models |
 | `main.py` | FastAPI routes and HTTP error mapping |
+| `fde-react-check/` | React + TypeScript UI: add encounter, patient search, high-risk queue, status tracking |
 
 ## API Endpoints
 
@@ -133,9 +134,11 @@ Swagger / API Consumer
 | --- | --- | --- |
 | GET | `/encounters?limit=&offset=` | List encounters (paginated) |
 | POST | `/encounters` | Add an encounter (Add Patient Encounter form); risk is scored and MEDIUM/HIGH encounters are queued (201) |
+| GET | `/encounters/search?patient_nbr=&risk_level=&risk_score=` | Search by any combination of patient number, risk level and exact risk score; includes care status |
 | GET | `/encounters/{encounter_id}` | Get one encounter (404 if missing) |
 | GET | `/care-queue?min_risk_score=&limit=&offset=` | MEDIUM + HIGH queue, highest score first |
 | GET | `/care-queue/high?limit=&offset=` | HIGH risk queue only |
+| GET | `/interventions/{encounter_id}` | Get an encounter's care status / owner / notes (404 / 409 like PATCH) |
 | PATCH | `/interventions/{encounter_id}` | Update workflow status / owner / notes |
 | GET | `/operations/summary` | Risk tiers and queue workload |
 | GET | `/operations/readmission-analysis` | Compare prioritization against historical `<30` outcomes |
@@ -216,6 +219,16 @@ The queue covers **8.2% of encounters but captures 17.7% of all `<30`-day readmi
    ```bash
    uvicorn main:app --reload
    ```
+
+6. In a second terminal, start the UI and open <http://localhost:5173>:
+
+   ```bash
+   cd fde-react-check
+   npm install
+   npm run dev
+   ```
+
+   The UI calls `/api/...`, which Vite proxies to `http://localhost:8000`. Use `API_URL=http://host:port npm run dev` if the API runs elsewhere.
 
 Useful verification queries are listed at the bottom of `seed_or_setup.sql`.
 

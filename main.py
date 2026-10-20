@@ -14,7 +14,9 @@ from models import (
     InterventionUpdate,
     ManagementDashboard,
     OperationsSummary,
+    PatientSearchResult,
     ReadmissionAnalysis,
+    RiskLevel,
 )
 
 
@@ -71,6 +73,30 @@ def create_encounter(payload: EncounterCreate):
     return service.create_encounter(payload.model_dump())
 
 
+@app.get("/encounters/search", response_model=List[PatientSearchResult])
+def search_encounters(
+    patient_nbr: Optional[int] = Query(default=None, gt=0),
+    risk_level: Optional[RiskLevel] = Query(default=None),
+    risk_score: Optional[int] = Query(default=None, ge=0, le=8),
+    limit: int = Query(default=100, ge=1, le=1000),
+    offset: int = Query(default=0, ge=0),
+):
+    """
+    Search encounters by patient number and/or risk level and/or exact risk score,
+    with the care intervention status for queued encounters. Highest risk first.
+    """
+    try:
+        return service.search_encounters(
+            patient_nbr=patient_nbr,
+            risk_level=risk_level,
+            risk_score=risk_score,
+            limit=limit,
+            offset=offset,
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
 @app.get("/encounters/{encounter_id}", response_model=Encounter)
 def get_encounter(encounter_id: int):
     """
@@ -112,6 +138,26 @@ def get_high_risk_care_queue(
         limit=limit,
         offset=offset,
     )
+
+
+@app.get(
+    "/interventions/{encounter_id}",
+    response_model=Intervention,
+    responses={
+        404: {"description": "Encounter does not exist"},
+        409: {"description": "Encounter exists but is not in the care queue"},
+    },
+)
+def get_intervention(encounter_id: int):
+    """
+    Fetch the care intervention (status, assignee, notes) for an encounter.
+    """
+    try:
+        return service.get_intervention(encounter_id)
+    except service.EncounterNotFoundError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+    except service.NotInCareQueueError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
 
 
 @app.patch(

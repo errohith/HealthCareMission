@@ -211,6 +211,52 @@ def upsert_patient_encounters(records: list[dict[str, Any]]) -> int:
         conn.close()
 
 
+def search_encounters(
+    patient_nbr: Optional[int] = None,
+    risk_level: Optional[str] = None,
+    risk_score: Optional[int] = None,
+    limit: int = 100,
+    offset: int = 0,
+) -> list[dict[str, Any]]:
+    """
+    Search encounters by any combination of patient number, risk level and exact risk score,
+    including the care intervention status when the encounter is in the queue.
+    """
+    where_clauses = []
+    params: list[Any] = []
+
+    if patient_nbr is not None:
+        where_clauses.append("e.patient_nbr = %s")
+        params.append(patient_nbr)
+
+    if risk_level is not None:
+        where_clauses.append("e.risk_level = %s")
+        params.append(risk_level)
+
+    if risk_score is not None:
+        where_clauses.append("e.risk_score = %s")
+        params.append(risk_score)
+
+    where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
+    params.extend([limit, offset])
+
+    sql = f"""
+        SELECT
+            {", ".join(f"e.{column}" for column in PATIENT_ENCOUNTER_COLUMNS)},
+            i.intervention_id,
+            i.status,
+            i.assigned_to,
+            i.notes,
+            i.updated_at
+        FROM patient_encounters e
+        LEFT JOIN care_interventions i ON i.encounter_id = e.encounter_id
+        {where_sql}
+        ORDER BY e.risk_score DESC, e.encounter_id
+        LIMIT %s OFFSET %s;
+    """
+    return _fetch_all(sql, tuple(params))
+
+
 def insert_encounter(encounter: dict[str, Any], add_to_care_queue: bool) -> dict[str, Any]:
     """
     Insert one new encounter with the next encounter_id and, when add_to_care_queue is set,
