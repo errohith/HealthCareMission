@@ -132,6 +132,7 @@ Swagger / API Consumer
 | Method | Endpoint | Purpose |
 | --- | --- | --- |
 | GET | `/encounters?limit=&offset=` | List encounters (paginated) |
+| POST | `/encounters` | Add an encounter (Add Patient Encounter form); risk is scored and MEDIUM/HIGH encounters are queued (201) |
 | GET | `/encounters/{encounter_id}` | Get one encounter (404 if missing) |
 | GET | `/care-queue?min_risk_score=&limit=&offset=` | MEDIUM + HIGH queue, highest score first |
 | GET | `/care-queue/high?limit=&offset=` | HIGH risk queue only |

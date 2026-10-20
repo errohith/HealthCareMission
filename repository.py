@@ -211,6 +211,41 @@ def upsert_patient_encounters(records: list[dict[str, Any]]) -> int:
         conn.close()
 
 
+def insert_encounter(encounter: dict[str, Any], add_to_care_queue: bool) -> dict[str, Any]:
+    """
+    Insert one new encounter with the next encounter_id and, when add_to_care_queue is set,
+    its PENDING_REVIEW intervention, in a single transaction. The table lock serializes
+    concurrent inserts so two requests cannot claim the same encounter_id.
+    """
+    columns = [column for column in PATIENT_ENCOUNTER_COLUMNS if column != "encounter_id"]
+
+    sql = f"""
+        INSERT INTO patient_encounters (encounter_id, {", ".join(columns)})
+        SELECT COALESCE(MAX(encounter_id), 0) + 1, {", ".join(["%s"] * len(columns))}
+        FROM patient_encounters
+        RETURNING {ENCOUNTER_SELECT_COLUMNS};
+    """
+
+    conn = get_dict_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("LOCK TABLE patient_encounters IN SHARE ROW EXCLUSIVE MODE;")
+            cursor.execute(sql, tuple(encounter[column] for column in columns))
+            row = dict(cursor.fetchone())
+            if add_to_care_queue:
+                cursor.execute(
+                    "INSERT INTO care_interventions (encounter_id) VALUES (%s);",
+                    (row["encounter_id"],),
+                )
+        conn.commit()
+        return row
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
 # ---------------------------------------------------------------------------
 # Care queue and interventions
 # ---------------------------------------------------------------------------

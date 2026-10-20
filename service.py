@@ -128,6 +128,29 @@ def get_encounter(encounter_id: int) -> dict[str, Any]:
     return encounter
 
 
+def is_queue_eligible(encounter: Mapping[str, Any]) -> bool:
+    """
+    Same rule as sync_care_queue: MEDIUM/HIGH risk and not discharged as expired / hospice death.
+    """
+    return (
+        encounter["risk_level"] in QUEUE_RISK_LEVELS
+        and encounter["discharge_disposition_id"] not in EXCLUDED_DISCHARGE_DISPOSITIONS
+    )
+
+
+def create_encounter(encounter_data: Mapping[str, Any]) -> dict[str, Any]:
+    """
+    Score a new encounter, store it, and queue it for review when it is eligible.
+    A new encounter has no readmission outcome yet, so readmitted is recorded as NO.
+    """
+    encounter = score_encounter({**encounter_data, "readmitted": "NO"})
+    in_care_queue = is_queue_eligible(encounter)
+
+    created = repository.insert_encounter(encounter, add_to_care_queue=in_care_queue)
+    created["in_care_queue"] = in_care_queue
+    return created
+
+
 def get_care_queue(
     high_only: bool = False,
     min_risk_score: Optional[int] = None,

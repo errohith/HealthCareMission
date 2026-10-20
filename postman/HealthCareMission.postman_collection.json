@@ -114,6 +114,111 @@
           "response": []
         },
         {
+          "name": "Add encounter",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test(\"Encounter is scored and queued\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.encounter_id).to.be.a(\"number\");",
+                  "    pm.expect(body.risk_score).to.eql(7);",
+                  "    pm.expect(body.risk_level).to.eql(\"HIGH\");",
+                  "    pm.expect(body.in_care_queue).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "encounters"
+              ],
+              "raw": "{{baseUrl}}/encounters"
+            },
+            "description": "Add Patient Encounter form. Mandatory: patient_nbr, age, time_in_hospital, number_inpatient, number_emergency, num_medications. Note: each run inserts a new row.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patient_nbr\": 8222157,\n  \"age\": \"[70-80)\",\n  \"time_in_hospital\": 8,\n  \"number_inpatient\": 3,\n  \"number_emergency\": 2,\n  \"num_medications\": 22\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add encounter - missing mandatory field (422)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 422\", function () {",
+                  "    pm.response.to.have.status(422);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "encounters"
+              ],
+              "raw": "{{baseUrl}}/encounters"
+            },
+            "description": "age is omitted.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patient_nbr\": 8222157,\n  \"time_in_hospital\": 8,\n  \"number_inpatient\": 3,\n  \"number_emergency\": 2,\n  \"num_medications\": 22\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
           "name": "List encounters - page 2",
           "event": [
             {

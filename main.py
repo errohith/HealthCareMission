@@ -8,6 +8,8 @@ import service
 from models import (
     CareQueueItem,
     Encounter,
+    EncounterCreate,
+    EncounterCreated,
     Intervention,
     InterventionUpdate,
     ManagementDashboard,
@@ -58,6 +60,15 @@ def list_encounters(
     Retrieve a paginated list of patient encounters.
     """
     return service.list_encounters(limit=limit, offset=offset)
+
+
+@app.post("/encounters", response_model=EncounterCreated, status_code=201)
+def create_encounter(payload: EncounterCreate):
+    """
+    Add a new patient encounter. The server assigns encounter_id, calculates the risk score
+    and level, and adds the encounter to the care queue when it is MEDIUM/HIGH risk.
+    """
+    return service.create_encounter(payload.model_dump())
 
 
 @app.get("/encounters/{encounter_id}", response_model=Encounter)
