@@ -6,8 +6,8 @@ from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 
 
-# Load environment variables from .env in the same directory.
-env_path = Path(__file__).resolve().parent / ".env"
+# Load environment variables from the repository root.
+env_path = Path(__file__).resolve().parent.parent / ".env"
 load_dotenv(dotenv_path=env_path)
 
 

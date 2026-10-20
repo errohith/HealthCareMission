@@ -8,6 +8,16 @@ This project is a Forward Deployed Engineer mini project for an enterprise healt
 
 The goal is not to build a clinical prediction model. The goal is to build a backend workflow that helps a hospital prioritize which recently discharged diabetes patients should be reviewed first by the care-management team, and to measure whether that prioritization lines up with historical outcomes.
 
+## What changed in this version
+
+This version adds the complete end-to-end workflow for the hospital operations use case:
+
+- a cleaned and scored encounter ingestion pipeline from the diabetes CSV
+- a PostgreSQL-backed API with queue prioritization and workflow tracking
+- a React + TypeScript front end for adding encounters, searching patients, reviewing the high-risk queue, and updating case status
+- operational analytics for risk distribution, queue workload, and historical readmission lift
+- a Postman collection and demo script for validating the API and walking through the user flow
+
 ## Business Problem
 
 Hospitals often have more discharged patients than a care-management team can manually review. For diabetes patients, early readmission within 30 days is an important operational and financial concern.
@@ -37,15 +47,15 @@ This application helps the hospital identify patients who should be reviewed fir
 
 ## Dataset Fields Used
 
-The application uses a focused subset of `data/diabetic_data.csv`:
+The application uses a focused subset of `backend/data/diabetic_data.csv`:
 
 `encounter_id`, `patient_nbr`, `age`, `time_in_hospital`, `number_inpatient`, `number_emergency`, `number_outpatient`, `num_medications`, `num_lab_procedures`, `discharge_disposition_id`, `admission_type_id`, `readmitted`
 
-**Data leakage rule:** `readmitted` is the historical outcome. It is stored for evaluation only and is never used to calculate `risk_score` (see `calculate_risk_score` in `service.py`).
+**Data leakage rule:** `readmitted` is the historical outcome. It is stored for evaluation only and is never used to calculate `risk_score` (see `calculate_risk_score` in `backend/service.py`).
 
 ### Data cleanup
 
-`data_loader.py` reads only the required columns, treats `?` and blanks as missing, and drops (rather than imputes) rows that cannot be scored reliably. Each load prints a cleanup report:
+`backend/data_loader.py` reads only the required columns, treats `?` and blanks as missing, and drops (rather than imputes) rows that cannot be scored reliably. Each load prints a cleanup report:
 
 | Check | Action |
 | --- | --- |
@@ -98,35 +108,38 @@ Metrics group these statuses as **pending** (`PENDING_REVIEW`), **in progress** 
 Healthcare CSV Dataset
         |
         v
-data_loader.py  (clean -> score -> upsert -> sync queue)
+backend/data_loader.py  (clean -> score -> upsert -> sync queue)
         |
         v
 PostgreSQL
         ^
         |
-repository.py   (parameterized SQL only)
+backend/repository.py   (parameterized SQL only)
         ^
         |
-service.py      (risk rules, queue eligibility, workflow validation, metrics)
+backend/service.py      (risk rules, queue eligibility, workflow validation, metrics)
         ^
         |
-main.py         (FastAPI routes, HTTP errors)
+backend/main.py         (FastAPI routes, HTTP errors)
         ^
         |
-Swagger / API Consumer / fde-react-check (React UI, via Vite /api proxy)
+Swagger / API Consumer / frontend (React UI, via Vite /api proxy)
 ```
 
 | File | Responsibility |
 | --- | --- |
-| `database.py` | PostgreSQL connection configuration (`DATABASE_URL` from `.env`) |
-| `schema.sql` | Tables, constraints, indexes, `updated_at` trigger |
-| `seed_or_setup.sql` | Creates the database and applies `schema.sql` in one step |
-| `data_loader.py` | CSV ingestion, cleanup report, scoring, queue sync |
-| `service.py` | Business rules: scoring, risk levels, queue eligibility, status validation, rates and lift |
-| `repository.py` | SQL queries and persistence only; every user value is passed as a parameter |
-| `models.py` | Pydantic request and response models |
-| `main.py` | FastAPI routes and HTTP error mapping |
-| `fde-react-check/` | React + TypeScript UI: add encounter, patient search, high-risk queue, status tracking |
+| `backend/database.py` | PostgreSQL connection configuration (reads the repository-root `.env`) |
+| `backend/schema.sql` | Tables, constraints, indexes, `updated_at` trigger |
+| `backend/seed_or_setup.sql` | Creates the database and applies `schema.sql` in one step |
+| `backend/data_loader.py` | CSV ingestion, cleanup report, scoring, queue sync |
+| `backend/service.py` | Business rules: scoring, risk levels, queue eligibility, status validation, rates and lift |
+| `backend/repository.py` | SQL queries and persistence only; every user value is passed as a parameter |
+| `backend/models.py` | Pydantic request and response models |
+| `backend/main.py` | FastAPI routes and HTTP error mapping |
+| `backend/requirements.txt` | Python API and data-loader dependencies |
+| `frontend/` | React + TypeScript UI: add encounter, patient search, high-risk queue, status tracking |
+| `postman/` | API test collection and environment for local validation |
+| `docs/DEMO_SCRIPT.md` | Demo walkthrough for the business case and product story |
 
 ## API Endpoints
 
@@ -191,7 +204,7 @@ The queue covers **8.2% of encounters but captures 17.7% of all `<30`-day readmi
    ```bash
    python3 -m venv .venv
    source .venv/bin/activate
-   pip install -r requirements.txt
+   pip install -r backend/requirements.txt
    ```
 
 2. Configure the database connection:
@@ -201,36 +214,37 @@ The queue covers **8.2% of encounters but captures 17.7% of all `<30`-day readmi
    # edit .env and set DATABASE_URL=postgresql://postgres:<password>@localhost:5432/fde_db
    ```
 
-3. Create the database and tables (run from the project folder):
+3. Create the database and tables (run from the project root):
 
    ```bash
-   psql -U postgres -f seed_or_setup.sql
+   psql -U postgres -f backend/seed_or_setup.sql
    ```
 
 4. Check the connection, then load the dataset:
 
    ```bash
-   python database.py
-   python data_loader.py
+   python backend/database.py
+   python backend/data_loader.py
    ```
 
 5. Start the API and open Swagger at <http://127.0.0.1:8000/docs>:
 
    ```bash
+   cd backend
    uvicorn main:app --reload
    ```
 
 6. In a second terminal, start the UI and open <http://localhost:5173>:
 
    ```bash
-   cd fde-react-check
+   cd frontend
    npm install
    npm run dev
    ```
 
    The UI calls `/api/...`, which Vite proxies to `http://localhost:8000`. Use `API_URL=http://host:port npm run dev` if the API runs elsewhere.
 
-Useful verification queries are listed at the bottom of `seed_or_setup.sql`.
+Useful verification queries are listed at the bottom of `backend/seed_or_setup.sql`.
 
 ## Screenshots
 

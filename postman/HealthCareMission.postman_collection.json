@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Diabetes Readmission Intervention Queue API",
-    "description": "All endpoints of the FastAPI service in main.py (v1.1.0).\n\nRun order: the requests chain through collection variables. 'List encounters' sets sampleEncounterId and 'Get high-risk care queue' sets queueEncounterId, which the Interventions folder uses. The last successful intervention request resets the record to PENDING_REVIEW.\n\nIf PostgreSQL is unreachable, every database-backed endpoint returns 503.\n\nLearning prototype only - not for clinical decision-making.",
+    "description": "All endpoints of the FastAPI service in backend/main.py (v1.1.0).\n\nRun order: the requests chain through collection variables. 'List encounters' sets sampleEncounterId and 'Get high-risk care queue' sets queueEncounterId, which the Interventions folder uses. The last successful intervention request resets the record to PENDING_REVIEW.\n\nIf PostgreSQL is unreachable, every database-backed endpoint returns 503.\n\nLearning prototype only - not for clinical decision-making.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -1558,7 +1558,7 @@
     {
       "key": "baseUrl",
       "value": "http://127.0.0.1:8000",
-      "description": "uvicorn main:app --reload"
+      "description": "Start the API from the backend directory with: cd backend && uvicorn main:app --reload"
     },
     {
       "key": "sampleEncounterId",

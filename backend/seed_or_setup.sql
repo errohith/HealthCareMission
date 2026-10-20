@@ -1,8 +1,8 @@
--- One-step database setup. Run from any directory:
---   psql -U postgres -f seed_or_setup.sql
+-- One-step database setup. Run from the repository root:
+--   psql -U postgres -f backend/seed_or_setup.sql
 --
 -- Creates the fde_db database (if missing), connects to it, and applies schema.sql.
--- Encounter rows are NOT inserted here; load them with `python data_loader.py`.
+-- Encounter rows are NOT inserted here; load them with `python backend/data_loader.py`.
 
 SELECT 'CREATE DATABASE fde_db'
 WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = 'fde_db')

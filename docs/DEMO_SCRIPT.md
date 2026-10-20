@@ -4,6 +4,7 @@ Record with QuickTime (File > New Screen Recording) or Cmd+Shift+5. Before recor
 
 ```bash
 source .venv/bin/activate
+cd backend
 uvicorn main:app --reload        # leave running; open http://127.0.0.1:8000/docs
 ```
 
@@ -23,18 +24,19 @@ Scroll briefly over the **FDE Discovery** table: what we know, what we don't, th
 
 ## 2. Architecture and the leakage rule (~45s): VS Code
 
-- Show the file list: `data_loader -> PostgreSQL <- repository <- service <- main`.
-- Open `service.py` and show `calculate_risk_score`:
+- Show the file list: `backend/data_loader -> PostgreSQL <- backend/repository <- backend/service <- backend/main`.
+- Open `backend/service.py` and show `calculate_risk_score`:
   > "These are the five rules from the brief. Notice `readmitted` is never read here; it's only
   > used later in `get_readmission_analysis` to evaluate the rule."
-- Show `EXCLUDED_DISCHARGE_DISPOSITIONS`:
+- Show `EXCLUDED_DISCHARGE_DISPOSITIONS` in `backend/service.py`:
   > "One FDE judgment call: 188 MEDIUM/HIGH patients were discharged as expired or to hospice.
   > Nobody can call them, so they're excluded from the queue."
-- Open `repository.py` briefly: "Only parameterized SQL lives here."
+- Open `backend/repository.py` briefly: "Only parameterized SQL lives here."
 
 ## 3. Load the data (~30s): terminal
 
 ```bash
+cd backend
 python data_loader.py
 ```
 

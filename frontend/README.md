@@ -1,6 +1,6 @@
 # Diabetes Patient Management UI
 
-React + TypeScript (Vite) front end for the FastAPI service in the parent folder.
+React + TypeScript (Vite) front end for the FastAPI service in `../backend/`.
 
 | Screen | Route | API |
 | --- | --- | --- |
@@ -11,7 +11,14 @@ React + TypeScript (Vite) front end for the FastAPI service in the parent folder
 
 ## Run
 
-Start the API first (`uvicorn main:app --reload` in the parent folder), then:
+Start the API in a separate terminal from the repository root:
+
+```bash
+cd backend
+uvicorn main:app --reload
+```
+
+Then run the frontend from this directory:
 
 ```bash
 npm install
