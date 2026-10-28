@@ -2,13 +2,8 @@ import { useEffect, useState } from 'react'
 import { getHighRiskQueue, type CareQueueItem } from '../api'
 import { Alert, EmptyState } from '../components/Alert'
 import { RiskBadge, StatusBadge } from '../components/Badges'
-import {
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  InboxIcon,
-  RefreshIcon,
-  ShieldAlertIcon,
-} from '../components/Icons'
+import { InboxIcon, RefreshIcon, ShieldAlertIcon } from '../components/Icons'
+import { Pagination } from '../components/Pagination'
 import { statusHref } from '../routes'
 
 const PAGE_SIZE = 25
@@ -17,6 +12,7 @@ export function HighRiskQueue() {
   const [page, setPage] = useState(0)
   const [reloadKey, setReloadKey] = useState(0)
   const [rows, setRows] = useState<CareQueueItem[]>([])
+  const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -28,7 +24,11 @@ export function HighRiskQueue() {
   useEffect(() => {
     let cancelled = false
     getHighRiskQueue(PAGE_SIZE, page * PAGE_SIZE)
-      .then((data) => !cancelled && setRows(data))
+      .then(({ items, total }) => {
+        if (cancelled) return
+        setRows(items)
+        setTotal(total)
+      })
       .catch((err) => !cancelled && setError(err instanceof Error ? err.message : String(err)))
       .finally(() => !cancelled && setLoading(false))
     return () => {
@@ -114,31 +114,16 @@ export function HighRiskQueue() {
         )
       )}
 
-      <div className="pager">
-        <button
-          type="button"
-          className="button ghost"
-          disabled={page === 0 || loading}
-          onClick={() => {
-            startLoading()
-            setPage((current) => current - 1)
-          }}
-        >
-          <ChevronLeftIcon /> Previous
-        </button>
-        <span className="muted">Page {page + 1}</span>
-        <button
-          type="button"
-          className="button ghost"
-          disabled={rows.length < PAGE_SIZE || loading}
-          onClick={() => {
-            startLoading()
-            setPage((current) => current + 1)
-          }}
-        >
-          Next <ChevronRightIcon />
-        </button>
-      </div>
+      <Pagination
+        page={page}
+        pageSize={PAGE_SIZE}
+        total={total}
+        disabled={loading}
+        onPageChange={(next) => {
+          startLoading()
+          setPage(next)
+        }}
+      />
     </section>
   )
 }

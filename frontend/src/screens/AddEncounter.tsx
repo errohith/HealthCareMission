@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { AGE_GROUPS, createEncounter, type AgeGroup, type EncounterCreated } from '../api'
+import { AGE_GROUPS, type AgeGroup, type EncounterCreate, type EncounterCreated } from '../api'
 import { Alert } from '../components/Alert'
 import { Field } from '../components/Field'
 import { RiskBadge } from '../components/Badges'
@@ -49,7 +49,11 @@ function validate(form: FormState): Partial<Record<keyof FormState, string>> {
   return errors
 }
 
-export function AddEncounter() {
+export function AddEncounter({
+  onCreate,
+}: {
+  onCreate: (payload: EncounterCreate) => Promise<EncounterCreated>
+}) {
   const [form, setForm] = useState<FormState>(EMPTY_FORM)
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({})
   const [submitting, setSubmitting] = useState(false)
@@ -72,7 +76,7 @@ export function AddEncounter() {
 
     setSubmitting(true)
     try {
-      const result = await createEncounter({
+      const result = await onCreate({
         patient_nbr: Number(form.patient_nbr),
         age: form.age as AgeGroup,
         time_in_hospital: Number(form.time_in_hospital),

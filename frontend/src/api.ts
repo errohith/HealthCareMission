@@ -99,6 +99,12 @@ export interface SearchFilters {
   risk_score?: number
 }
 
+/** One page of a list endpoint; `total` comes from the X-Total-Count header. */
+export interface Page<T> {
+  items: T[]
+  total: number
+}
+
 export class ApiError extends Error {
   readonly status: number
 
@@ -122,7 +128,7 @@ function formatDetail(detail: unknown): string {
   return 'Unexpected error'
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+async function send(path: string, init?: RequestInit): Promise<Response> {
   let response: Response
   try {
     response = await fetch(`${API_BASE}${path}`, {
@@ -143,7 +149,22 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     throw new ApiError(response.status, message)
   }
 
+  return response
+}
+
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await send(path, init)
+  // 204 No Content (e.g. DELETE) has no body to parse.
+  if (response.status === 204) return undefined as T
   return response.json() as Promise<T>
+}
+
+async function requestPage<T>(path: string): Promise<Page<T>> {
+  const response = await send(path)
+  const items = (await response.json()) as T[]
+  const total = Number(response.headers.get('X-Total-Count'))
+  // Fall back to what we can see if the header is missing (e.g. an older API).
+  return { items, total: Number.isFinite(total) && total > 0 ? total : items.length }
 }
 
 function toQuery(params: Record<string, string | number | undefined>): string {
@@ -155,12 +176,20 @@ function toQuery(params: Record<string, string | number | undefined>): string {
   return text ? `?${text}` : ''
 }
 
+export function listEncounters(limit = 25, offset = 0): Promise<Page<Encounter>> {
+  return requestPage(`/encounters${toQuery({ limit, offset })}`)
+}
+
 export function createEncounter(payload: EncounterCreate): Promise<EncounterCreated> {
   return request('/encounters', { method: 'POST', body: JSON.stringify(payload) })
 }
 
 export function getEncounter(encounterId: number): Promise<Encounter> {
   return request(`/encounters/${encounterId}`)
+}
+
+export function deleteEncounter(encounterId: number): Promise<void> {
+  return request(`/encounters/${encounterId}`, { method: 'DELETE' })
 }
 
 export function searchEncounters(
@@ -171,8 +200,8 @@ export function searchEncounters(
   return request(`/encounters/search${toQuery({ ...filters, limit, offset })}`)
 }
 
-export function getHighRiskQueue(limit = 25, offset = 0): Promise<CareQueueItem[]> {
-  return request(`/care-queue/high${toQuery({ limit, offset })}`)
+export function getHighRiskQueue(limit = 25, offset = 0): Promise<Page<CareQueueItem>> {
+  return requestPage(`/care-queue/high${toQuery({ limit, offset })}`)
 }
 
 export function getIntervention(encounterId: number): Promise<Intervention> {

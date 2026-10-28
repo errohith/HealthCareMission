@@ -2,28 +2,37 @@ import { useEffect, useState, type ComponentType } from 'react'
 import './App.css'
 import {
   ClipboardCheckIcon,
+  ListIcon,
   Logo,
   SearchIcon,
   ShieldAlertIcon,
   UserPlusIcon,
 } from './components/Icons'
+import { Pagination } from './components/Pagination'
+import { useEncounters } from './hooks/useEncounters'
 import { parseRoute, screenHref, type Screen } from './routes'
 import { AddEncounter } from './screens/AddEncounter'
+import { EncounterList } from './screens/EncounterList'
 import { HighRiskQueue } from './screens/HighRiskQueue'
 import { SearchPatient } from './screens/SearchPatient'
 import { StatusTracking, type UpdateLogEntry } from './screens/StatusTracking'
 
 const NAV: { screen: Screen; label: string; icon: ComponentType<{ size?: number }> }[] = [
   { screen: 'add', label: 'Add Encounter', icon: UserPlusIcon },
+  { screen: 'encounters', label: 'All Encounters', icon: ListIcon },
   { screen: 'search', label: 'Search Patient', icon: SearchIcon },
   { screen: 'high-risk', label: 'High-Risk Queue', icon: ShieldAlertIcon },
   { screen: 'status', label: 'Status Tracking', icon: ClipboardCheckIcon },
 ]
 
+const ENCOUNTERS_PAGE_SIZE = 25
+
 function App() {
   const [route, setRoute] = useState(() => parseRoute(window.location.hash))
   // Lives here so the update list survives switching between screens.
   const [updateLog, setUpdateLog] = useState<UpdateLogEntry[]>([])
+  // Shared by Add Encounter and All Encounters, so a new encounter refreshes the list.
+  const encounters = useEncounters(ENCOUNTERS_PAGE_SIZE)
 
   useEffect(() => {
     const onHashChange = () => setRoute(parseRoute(window.location.hash))
@@ -59,7 +68,18 @@ function App() {
       </header>
 
       <main className="content">
-        {route.screen === 'add' && <AddEncounter />}
+        {route.screen === 'add' && <AddEncounter onCreate={encounters.create} />}
+        {route.screen === 'encounters' && (
+          <EncounterList encounters={encounters}>
+            <Pagination
+              page={encounters.page}
+              pageSize={encounters.pageSize}
+              total={encounters.total}
+              disabled={encounters.loading}
+              onPageChange={encounters.setPage}
+            />
+          </EncounterList>
+        )}
         {route.screen === 'search' && <SearchPatient />}
         {route.screen === 'high-risk' && <HighRiskQueue />}
         {route.screen === 'status' && (

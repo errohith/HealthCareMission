@@ -1,7 +1,7 @@
 from typing import List, Optional
 
 import psycopg2
-from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi import FastAPI, HTTPException, Query, Request, Response
 from fastapi.responses import JSONResponse
 
 import service
@@ -29,6 +29,10 @@ app = FastAPI(
     version="1.1.0",
 )
 
+# Paginated list endpoints return the total row count in this header, so clients can
+# show "page X of Y" without the JSON body changing shape.
+TOTAL_COUNT_HEADER = "X-Total-Count"
+
 
 @app.exception_handler(psycopg2.OperationalError)
 def database_unavailable_handler(request: Request, error: psycopg2.OperationalError):
@@ -55,12 +59,14 @@ def health_check():
 
 @app.get("/encounters", response_model=List[Encounter])
 def list_encounters(
+    response: Response,
     limit: int = Query(default=100, ge=1, le=1000),
     offset: int = Query(default=0, ge=0),
 ):
     """
-    Retrieve a paginated list of patient encounters.
+    Retrieve a paginated list of patient encounters. The total is in the X-Total-Count header.
     """
+    response.headers[TOTAL_COUNT_HEADER] = str(service.count_encounters())
     return service.list_encounters(limit=limit, offset=offset)
 
 
@@ -108,6 +114,17 @@ def get_encounter(encounter_id: int):
         raise HTTPException(status_code=404, detail=str(error)) from error
 
 
+@app.delete("/encounters/{encounter_id}", status_code=204)
+def delete_encounter(encounter_id: int):
+    """
+    Delete a patient encounter and its care intervention (returns 404 if not found).
+    """
+    try:
+        service.delete_encounter(encounter_id)
+    except service.EncounterNotFoundError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+
+
 @app.get("/care-queue", response_model=List[CareQueueItem])
 def get_care_queue(
     min_risk_score: Optional[int] = Query(default=None, ge=0, le=8),
@@ -127,12 +144,15 @@ def get_care_queue(
 
 @app.get("/care-queue/high", response_model=List[CareQueueItem])
 def get_high_risk_care_queue(
+    response: Response,
     limit: int = Query(default=100, ge=1, le=1000),
     offset: int = Query(default=0, ge=0),
 ):
     """
     Retrieve care queue records filtered exclusively for high-risk patient encounters.
+    The total is in the X-Total-Count header.
     """
+    response.headers[TOTAL_COUNT_HEADER] = str(service.count_care_queue(high_only=True))
     return service.get_care_queue(
         high_only=True,
         limit=limit,

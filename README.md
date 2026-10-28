@@ -149,6 +149,7 @@ Swagger / API Consumer / frontend (React UI, via Vite /api proxy)
 | POST | `/encounters` | Add an encounter (Add Patient Encounter form); risk is scored and MEDIUM/HIGH encounters are queued (201) |
 | GET | `/encounters/search?patient_nbr=&risk_level=&risk_score=` | Search by any combination of patient number, risk level and exact risk score; includes care status |
 | GET | `/encounters/{encounter_id}` | Get one encounter (404 if missing) |
+| DELETE | `/encounters/{encounter_id}` | Delete an encounter and its care intervention (204; 404 if missing) |
 | GET | `/care-queue?min_risk_score=&limit=&offset=` | MEDIUM + HIGH queue, highest score first |
 | GET | `/care-queue/high?limit=&offset=` | HIGH risk queue only |
 | GET | `/interventions/{encounter_id}` | Get an encounter's care status / owner / notes (404 / 409 like PATCH) |

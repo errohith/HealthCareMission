@@ -140,6 +140,14 @@ def get_encounters(limit: int = 100, offset: int = 0) -> list[dict[str, Any]]:
     return _fetch_all(sql, (limit, offset))
 
 
+def count_encounters() -> int:
+    """
+    Count all patient encounters (the total behind the paginated list).
+    """
+    row = _fetch_one("SELECT COUNT(*) AS count FROM patient_encounters;")
+    return row["count"] if row else 0
+
+
 def get_encounter_by_id(encounter_id: int) -> Optional[dict[str, Any]]:
     """
     Fetch a single patient encounter by its encounter ID.
@@ -150,6 +158,18 @@ def get_encounter_by_id(encounter_id: int) -> Optional[dict[str, Any]]:
         WHERE encounter_id = %s;
     """
     return _fetch_one(sql, (encounter_id,))
+
+
+def delete_encounter(encounter_id: int) -> int:
+    """
+    Delete an encounter; its care intervention is removed by ON DELETE CASCADE.
+    Returns the number of encounters deleted (0 or 1).
+    """
+    sql = """
+        DELETE FROM patient_encounters
+        WHERE encounter_id = %s;
+    """
+    return _execute_write(sql, (encounter_id,))
 
 
 def upsert_patient_encounters(records: list[dict[str, Any]]) -> int:
@@ -296,6 +316,37 @@ def insert_encounter(encounter: dict[str, Any], add_to_care_queue: bool) -> dict
 # Care queue and interventions
 # ---------------------------------------------------------------------------
 
+def _care_queue_filters(
+    risk_levels: list[str], min_risk_score: Optional[int]
+) -> tuple[str, list[Any]]:
+    """
+    Build the WHERE clause shared by the care queue page and its count.
+    """
+    where_clauses = ["e.risk_level = ANY(%s)"]
+    params: list[Any] = [risk_levels]
+
+    if min_risk_score is not None:
+        where_clauses.append("e.risk_score >= %s")
+        params.append(min_risk_score)
+
+    return " AND ".join(where_clauses), params
+
+
+def count_care_queue(risk_levels: list[str], min_risk_score: Optional[int] = None) -> int:
+    """
+    Count care queue records matching the same filters as get_care_queue.
+    """
+    where_sql, params = _care_queue_filters(risk_levels, min_risk_score)
+    sql = f"""
+        SELECT COUNT(*) AS count
+        FROM patient_encounters e
+        JOIN care_interventions i ON i.encounter_id = e.encounter_id
+        WHERE {where_sql};
+    """
+    row = _fetch_one(sql, tuple(params))
+    return row["count"] if row else 0
+
+
 def get_care_queue(
     risk_levels: list[str],
     min_risk_score: Optional[int] = None,
@@ -305,20 +356,14 @@ def get_care_queue(
     """
     Retrieve care queue records for the given risk levels, highest priority first.
     """
-    where_clauses = ["e.risk_level = ANY(%s)"]
-    params: list[Any] = [risk_levels]
-
-    if min_risk_score is not None:
-        where_clauses.append("e.risk_score >= %s")
-        params.append(min_risk_score)
-
+    where_sql, params = _care_queue_filters(risk_levels, min_risk_score)
     params.extend([limit, offset])
 
     sql = f"""
         SELECT {CARE_QUEUE_SELECT_COLUMNS}
         FROM patient_encounters e
         JOIN care_interventions i ON i.encounter_id = e.encounter_id
-        WHERE {" AND ".join(where_clauses)}
+        WHERE {where_sql}
         ORDER BY
             e.risk_score DESC,
             e.number_inpatient DESC,

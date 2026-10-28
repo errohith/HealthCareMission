@@ -121,11 +121,20 @@ def list_encounters(limit: int, offset: int) -> list[dict[str, Any]]:
     return repository.get_encounters(limit=limit, offset=offset)
 
 
+def count_encounters() -> int:
+    return repository.count_encounters()
+
+
 def get_encounter(encounter_id: int) -> dict[str, Any]:
     encounter = repository.get_encounter_by_id(encounter_id)
     if encounter is None:
         raise EncounterNotFoundError(f"Encounter {encounter_id} was not found.")
     return encounter
+
+
+def delete_encounter(encounter_id: int) -> None:
+    if repository.delete_encounter(encounter_id) == 0:
+        raise EncounterNotFoundError(f"Encounter {encounter_id} was not found.")
 
 
 def is_queue_eligible(encounter: Mapping[str, Any]) -> bool:
@@ -186,6 +195,11 @@ def get_care_queue(
         limit=limit,
         offset=offset,
     )
+
+
+def count_care_queue(high_only: bool = False, min_risk_score: Optional[int] = None) -> int:
+    risk_levels = ["HIGH"] if high_only else QUEUE_RISK_LEVELS
+    return repository.count_care_queue(risk_levels=risk_levels, min_risk_score=min_risk_score)
 
 
 # ---------------------------------------------------------------------------

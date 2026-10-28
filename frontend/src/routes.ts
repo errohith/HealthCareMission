@@ -1,13 +1,13 @@
-// Hash-based routing: #/add, #/search, #/high-risk, #/status, #/status/<encounterId>.
+// Hash-based routing: #/add, #/encounters, #/search, #/high-risk, #/status, #/status/<encounterId>.
 
-export type Screen = 'add' | 'search' | 'high-risk' | 'status'
+export type Screen = 'add' | 'encounters' | 'search' | 'high-risk' | 'status'
 
 export interface Route {
   screen: Screen
   encounterId?: number
 }
 
-const SCREENS: Screen[] = ['add', 'search', 'high-risk', 'status']
+const SCREENS: Screen[] = ['add', 'encounters', 'search', 'high-risk', 'status']
 
 export function parseRoute(hash: string): Route {
   const [screen, id] = hash.replace(/^#\/?/, '').split('/')

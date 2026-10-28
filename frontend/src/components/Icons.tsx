@@ -46,6 +46,27 @@ export const ShieldAlertIcon = (props: IconProps) => (
   </Icon>
 )
 
+export const ListIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M3 12h.01" />
+    <path d="M3 18h.01" />
+    <path d="M3 6h.01" />
+    <path d="M8 12h13" />
+    <path d="M8 18h13" />
+    <path d="M8 6h13" />
+  </Icon>
+)
+
+export const TrashIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M3 6h18" />
+    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+    <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+    <line x1="10" x2="10" y1="11" y2="17" />
+    <line x1="14" x2="14" y1="11" y2="17" />
+  </Icon>
+)
+
 export const ClipboardCheckIcon = (props: IconProps) => (
   <Icon {...props}>
     <rect width="8" height="4" x="8" y="2" rx="1" ry="1" />
@@ -63,6 +84,20 @@ export const ChevronRightIcon = (props: IconProps) => (
 export const ChevronLeftIcon = (props: IconProps) => (
   <Icon {...props}>
     <path d="m15 18-6-6 6-6" />
+  </Icon>
+)
+
+export const ChevronsLeftIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="m11 17-5-5 5-5" />
+    <path d="m18 17-5-5 5-5" />
+  </Icon>
+)
+
+export const ChevronsRightIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="m6 17 5-5-5-5" />
+    <path d="m13 17 5-5-5-5" />
   </Icon>
 )
 
